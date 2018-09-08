@@ -1,4 +1,7 @@
 
+/** 
+ * Provides an interface to parse distinct forms of arithmetic expressions 
+ */
 public interface IParser {
   
   /**

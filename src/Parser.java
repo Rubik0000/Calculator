@@ -2,118 +2,112 @@
 import java.util.Stack;
 import java.util.LinkedList;
 
+/**
+ * Parses different forms of arithmetic expressions 
+ * with given context of operators and literals
+ */
 public class Parser implements IParser {
+  
+  private IOperators _operators;
+  
+  /**
+   * Constructor
+   *
+   * @param ops a context of current operators and literals
+   */
+  public Parser(IOperators ops) {
+    _operators = ops;
+  }
 
   /**
-   * Checks whether a character is a digit or dot
+   * Returns a given string without spaces
    * 
-   * @param ch
-   * @return 
-   */
-  private boolean isNumber(char ch) {
-    return ch >= '0' && ch <= '9' || ch == '.';
-  }
- 
-  /**
-   * Checks whether a character is an operator
-   * 
-   * @param ch
+   * @param str
    * @return
    */
-  private boolean isOperator(String ch) {
-    return ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/");
-  }
-  
-  /**
-   * Checks whether a one operator has higher priority then an another 
-   * 
-   * @param source
-   * @param other
-   * @return -1 if source has less priority then other <br>
-   *          0 if priorities are equal <br>
-   *          1 if source has higher priority then other 
-   */
-  private int hasHigherPriop(String source, String other) {
-    if ((source.equals("*") || source.equals("/")) 
-        && !other.equals("*") && !other.equals("/")) 
-    {
-      return 1;
-    } 
-    if ((source.equals("*") || source.equals("/")) && 
-        (other.equals("*") || other.equals("/"))) 
-    {
-      return 0;
+  private String getPureString(String str) {
+    StringBuilder pureStr = new StringBuilder(str.length());
+    for (int i = 0; i < str.length(); ++i) {
+      if (str.charAt(i) != ' ') {
+        pureStr.append(str.charAt(i));
+      }
     }
-    return -1;
+    return pureStr.toString();
   }
   
   /**
-   * Checks whether a character is an open brace
-   * 
-   * @param ch
-   * @return
+   * Uses shunting-yard algorithm
    */
-  private boolean isOpenBrace(String ch) {
-    return ch.equals("(");
-  }
-  
-  /**
-   * Checks whether a character is an close brace
-   * 
-   * @param ch
-   * @return
-   */
-  private boolean isCloseBrace(String ch) {
-    return ch.equals(")");
-  }
-  
   @Override
   public String[] infixToPostfix(String infixExp) throws InvalidExpressionFormException {
+    infixExp = getPureString(infixExp);
+    
+    // output postfix representation
     LinkedList<String> postFix = new LinkedList<String>();
+    
+    // stack of operators and braces
     Stack<String> operators = new Stack<String>();
-    String lit = "";
+    String numberLiteral = "";
     for (int i = 0; i < infixExp.length(); ++i) {
-      if ( isNumber( infixExp.charAt(i) ) ) {
-        lit += infixExp.charAt(i);
+      // if a character is a digit then concatenate it to number  
+      if ( _operators.isDigit( infixExp.charAt(i) ) ) {
+        numberLiteral += infixExp.charAt(i);
       }
+      // if the character is not a digit
       else {
-        if (lit != "") {
-          postFix.add(lit);
-          lit = "";
+        // push a number to the stack
+        if (numberLiteral != "") {
+          postFix.add(numberLiteral);
+          numberLiteral = "";
         }
+        // get current token from the character
         String token = String.valueOf( infixExp.charAt(i) );
-        if ( isOperator( token ) ) {
+        // if it is an operator
+        if ( _operators.isOperator( token ) ) {
+          // while the top of the stack is an operator 
+          // and has lower or equal priority then current one
+          // append the top to output value
           while ( !operators.isEmpty() && 
-                  isOperator(operators.peek()) &&
-                  hasHigherPriop(token, operators.peek()) <= 0) 
-          {
+                  _operators.isOperator(operators.peek()) &&
+                  _operators.equalPriority(token, operators.peek()) <= 0) {
+            
             postFix.add( operators.pop() );
           }
           operators.push( token );
         }
-        else if ( isOpenBrace( token ) ) {
+        // if it is an open brace push it to the stack
+        else if ( _operators.isOpenBrace( token ) ) {
           operators.push(token);
         }
-        else if ( isCloseBrace(token) ) {
-          while ( !operators.isEmpty() && !isOpenBrace(operators.peek()) ) {
+        // if it is a close brace
+        else if ( _operators.isCloseBrace(token) ) {
+          // while the top of the stack is not an open brace
+          // append it to output value
+          while ( !operators.isEmpty() && 
+                  !_operators.isOpenBrace(operators.peek()) ) {
+            
             postFix.add( operators.pop() );
           }
-          if (operators.isEmpty()) {
+          // if after end of the cycle there is no open brace
+          // it means that braces are not balances
+          if ( operators.isEmpty() || !_operators.isOpenBrace(operators.pop()) ) {
             throw new InvalidExpressionFormException("No braces balance");
           }
-          operators.pop();
         }
+        // if token is unknown
         else {
           throw new InvalidExpressionFormException("Invalid symbols");
         }
       }// else
     }// for
+    
+    // add left numbers and operators
+    if (numberLiteral != "") {
+      postFix.add(numberLiteral);
+    }
     while (!operators.isEmpty()) {
       postFix.add( operators.pop() );
     }
     return postFix.toArray(new String[0]);
   }
-
-	
-
 }
