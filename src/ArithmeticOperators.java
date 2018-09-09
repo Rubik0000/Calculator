@@ -12,18 +12,54 @@ public class ArithmeticOperators implements IOperators {
  
   @Override
   public boolean isOperator(String ch) {
-    return ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/");
+    return isUnary(ch) || ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/");
   }
   
   @Override
-  public int equalPriority(String source, String other) {
-    if ((source.equals("*") || source.equals("/")) && 
-         !other.equals("*") && !other.equals("/")) {
+  public boolean canBeUnary(String op) {
+    return op.equals("-") || op.equals("+");
+  }
+  
+  @Override
+  public boolean isUnary(String op) {
+    return op.matches("^u-") || op.matches("^u\\+");
+  }
+  
+  @Override
+  public String markAsUnary(String op) {
+    return "u" + op;
+  }
+  
+  /**
+   * Removes unary mark from an operator
+   * 
+   * @param op the operator
+   * @return the operator without unary mark
+   */
+  private String unMarkUnary(String op) {
+    return isUnary(op) ? op.substring(1) : op;
+  }
+  
+  @Override
+  public int equalPriority(String op1, String op2) {
+    boolean isUnOp1 = isUnary(op1);
+    boolean isUnOp2 = isUnary(op2);
+    if (isUnOp1 && !isUnOp2) {
+      return 1;
+    }
+    if (!isUnOp1 && isUnOp2) {
+      return -1;
+    }
+    if (isUnOp1 && isUnOp2) {
+      return 0;
+    }
+    if ((op1.equals("*") || op1.equals("/")) && 
+         !op2.equals("*") && !op2.equals("/")) {
       
       return 1;
     } 
-    if ((source.equals("*") || source.equals("/")) && 
-        (other.equals("*") || other.equals("/"))) {
+    if ((op1.equals("*") || op1.equals("/")) && 
+        (op2.equals("*") || op2.equals("/"))) {
       
       return 0;
     }
@@ -57,5 +93,15 @@ public class ArithmeticOperators implements IOperators {
       return left / right;
     }
     throw new InvalidExpressionFormException("Unknown operator");
+  }
+
+  @Override
+  public double performOperation(String op, double operand) 
+      throws InvalidExpressionFormException {
+    
+    if (!isUnary(op)) { 
+      throw new InvalidExpressionFormException("Unknown operator");
+    }
+    return performOperation(unMarkUnary(op), 0, operand);
   }
 }

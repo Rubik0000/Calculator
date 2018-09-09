@@ -31,23 +31,34 @@ public class Calculator implements ICalculator {
       // if it is an operator pop two numbers form the stack and perform the operation
       else if ( _operators.isOperator(exp[i]) ) {
         if (values.isEmpty()) {
-          throw new InvalidExpressionFormException("");
+          throw new InvalidExpressionFormException("Invalid expression");
         }
-        //double operand = values.pop();
-        double rightOperand = values.pop();
-        //if ( values.isEmpty() || _operators.isOperator(values.peek()) ) {}
-        double leftOperand = values.pop();
-        values.push( _operators.performOperation(exp[i], leftOperand, rightOperand) );
-      }
+        double operand = values.pop();
+        double result;
+        // if the operator is unary 
+        if (_operators.isUnary(exp[i])) {
+          result = _operators.performOperation(exp[i], operand); 
+        }
+        // if it is binary
+        else {
+          double rightOperand = operand;
+          if (values.isEmpty()) {
+            throw new InvalidExpressionFormException("Invalid expression");
+          }
+          double leftOperand = values.pop();
+          result = _operators.performOperation(exp[i], leftOperand, rightOperand);
+        }
+        values.push(result);
+      }// else if ( _operators.isOperator(exp[i]) )
       else {
-        throw new InvalidExpressionFormException("Uknows");
+        throw new InvalidExpressionFormException("Uknown token");
       }
     }// for
     if (!values.isEmpty()) {
       return values.pop();
     }
     else {
-      throw new InvalidExpressionFormException("вв");
+      throw new InvalidExpressionFormException("Invalid expression");
     }
   }
 }

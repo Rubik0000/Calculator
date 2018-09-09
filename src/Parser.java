@@ -48,6 +48,7 @@ public class Parser implements IParser {
     // stack of operators and braces
     Stack<String> operators = new Stack<String>();
     String numberLiteral = "";
+    String prev = "";
     for (int i = 0; i < infixExp.length(); ++i) {
       // if a character is a digit then concatenate it to number  
       if ( _operators.isDigit( infixExp.charAt(i) ) ) {
@@ -58,22 +59,28 @@ public class Parser implements IParser {
         // push a number to the stack
         if (numberLiteral != "") {
           postFix.add(numberLiteral);
+          prev = numberLiteral;
           numberLiteral = "";
         }
         // get current token from the character
         String token = String.valueOf( infixExp.charAt(i) );
         // if it is an operator
         if ( _operators.isOperator( token ) ) {
-          // while the top of the stack is an operator 
-          // and has lower or equal priority then current one
-          // append the top to output value
-          while ( !operators.isEmpty() && 
-                  _operators.isOperator(operators.peek()) &&
-                  _operators.equalPriority(token, operators.peek()) <= 0) {
-            
-            postFix.add( operators.pop() );
+          if (_operators.canBeUnary(token) && !_operators.isNumber(prev)) {
+            operators.push(_operators.markAsUnary(token) );
           }
-          operators.push( token );
+          else {
+            // while the top of the stack is an operator 
+            // and has lower or equal priority then current one
+            // append the top to output value
+            while ( !operators.isEmpty() && 
+                    _operators.isOperator(operators.peek()) &&
+                    _operators.equalPriority(token, operators.peek()) <= 0) {
+              
+              postFix.add( operators.pop() );
+            }
+            operators.push( token );
+          }
         }
         // if it is an open brace push it to the stack
         else if ( _operators.isOpenBrace( token ) ) {
@@ -98,6 +105,7 @@ public class Parser implements IParser {
         else {
           throw new InvalidExpressionFormException("Invalid symbols");
         }
+        prev = token;
       }// else
     }// for
     
